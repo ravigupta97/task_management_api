@@ -1,0 +1,37 @@
+
+# Core Framework
+fastapi==0.109.0              # Main web framework
+uvicorn[standard]==0.27.0     # ASGI server with auto-reload
+
+# Database
+sqlalchemy==2.0.25            # ORM with async support
+asyncpg==0.29.0               # Async PostgreSQL driver
+alembic==1.13.1               # Database migrations
+psycopg2-binary==2.9.9        # PostgreSQL adapter (for Alembic)
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0  # JWT token generation
+passlib[bcrypt]==1.7.4            # Password hashing
+python-multipart==0.0.6           # Form data parsing
+bcrypt==4.1.2                     # Bcrypt algorithm
+
+# Validation & Serialization
+pydantic==2.5.3               # Data validation (v2)
+pydantic-settings==2.1.0      # Settings management
+email-validator==2.1.0        # Email validation
+
+# Environment Management
+python-dotenv==1.0.0          # .env file support
+
+# Rate Limiting
+slowapi==0.1.9                # Rate limiting middleware
+
+# Testing
+pytest==7.4.4                 # Testing framework
+pytest-asyncio==0.23.3        # Async test support
+httpx==0.26.0                 # Async HTTP client for testing
+faker==22.6.0                 # Fake data generation for tests
+
+# Development Tools
+black==24.1.1                 # Code formatter
+flake8==7.0.0                 # Linter
