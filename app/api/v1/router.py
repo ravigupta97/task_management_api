@@ -1,11 +1,10 @@
-
 """
 Main API router for v1 endpoints.
 Aggregates all route modules.
 """
 
 from fastapi import APIRouter
-from app.api.v1 import auth, users
+from app.api.v1 import auth, users, tasks, categories
 
 # Create main API router
 api_router = APIRouter()
@@ -23,3 +22,14 @@ api_router.include_router(
     tags=["Users"]
 )
 
+api_router.include_router(
+    tasks.router,
+    prefix="/tasks",
+    tags=["Tasks"]
+)
+
+api_router.include_router(
+    categories.router,
+    prefix="/categories",
+    tags=["Categories"]
+)

@@ -1,4 +1,3 @@
-
 """
 Pydantic schemas package.
 Centralized exports for all schemas.
@@ -24,6 +23,25 @@ from app.schemas.token import (
     RefreshTokenResponse
 )
 
+from app.schemas.category import (
+    CategoryCreate,
+    CategoryUpdate,
+    CategoryResponse,
+    CategoryInDB,
+    CategoryWithTasks
+)
+
+from app.schemas.task import (
+    TaskCreate,
+    TaskUpdate,
+    TaskResponse,
+    TaskInDB,
+    TaskWithCategory,
+    TaskListResponse,
+    PaginationParams,
+    TaskFilterParams
+)
+
 __all__ = [
     # User schemas
     "UserCreate",
@@ -42,4 +60,21 @@ __all__ = [
     "TokenPayload",
     "RefreshTokenRequest",
     "RefreshTokenResponse",
+    
+    # Category schemas
+    "CategoryCreate",
+    "CategoryUpdate",
+    "CategoryResponse",
+    "CategoryInDB",
+    "CategoryWithTasks",
+    
+    # Task schemas
+    "TaskCreate",
+    "TaskUpdate",
+    "TaskResponse",
+    "TaskInDB",
+    "TaskWithCategory",
+    "TaskListResponse",
+    "PaginationParams",
+    "TaskFilterParams",
 ]
