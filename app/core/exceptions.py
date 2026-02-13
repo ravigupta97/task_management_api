@@ -1,4 +1,3 @@
-
 """
 Custom exception classes for the application.
 Provides specific exceptions for different error scenarios.
@@ -76,3 +75,24 @@ class InvalidTokenError(AppException):
     
     def __init__(self, message: str = "Invalid or expired token"):
         super().__init__(message=message, status_code=401)
+
+
+class RateLimitError(AppException):
+    """Raised when rate limit is exceeded."""
+    
+    def __init__(self, message: str = "Too many requests", retry_after: int = 60):
+        super().__init__(message=message, status_code=429, details={"retry_after": retry_after})
+
+
+class DatabaseError(AppException):
+    """Raised when database operation fails."""
+    
+    def __init__(self, message: str = "Database operation failed"):
+        super().__init__(message=message, status_code=500)
+
+
+class ExternalServiceError(AppException):
+    """Raised when external service (email, etc.) fails."""
+    
+    def __init__(self, message: str = "External service unavailable"):
+        super().__init__(message=message, status_code=503)

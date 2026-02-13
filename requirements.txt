@@ -26,12 +26,5 @@ python-dotenv==1.0.0          # .env file support
 # Rate Limiting
 slowapi==0.1.9                # Rate limiting middleware
 
-# Testing
-pytest==7.4.4                 # Testing framework
-pytest-asyncio==0.23.3        # Async test support
-httpx==0.26.0                 # Async HTTP client for testing
-faker==22.6.0                 # Fake data generation for tests
-
-# Development Tools
-black==24.1.1                 # Code formatter
-flake8==7.0.0                 # Linter
+# Production Server
+gunicorn==21.2.0
