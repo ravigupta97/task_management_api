@@ -4,7 +4,7 @@ Initializes app, middleware, routes, and exception handlers.
 """
 
 from fastapi import FastAPI, Request, Response, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
@@ -107,7 +107,7 @@ All errors follow a consistent format:
 ```
     """,
     docs_url="/docs",
-    redoc_url="/redoc",
+    redoc_url=None,
     openapi_url="/openapi.json",
     lifespan=lifespan,
     responses={
@@ -128,10 +128,45 @@ All errors follow a consistent format:
     license_info={
         "name": "MIT",
         "url": "https://opensource.org/licenses/MIT"
-    }
+    },
+    swagger_ui_parameters={
+        "syntaxHighlight.theme": "monokai",
+        "tryItOutEnabled": True
+    },
+    redoc_standalone_src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"
 )
 
 
+@app.get("/redoc", include_in_schema=False)
+async def custom_redoc():
+    """
+    Custom ReDoc documentation endpoint.
+    Returns HTML page with ReDoc embedded.
+    """
+    return HTMLResponse(
+        content=f"""
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>{settings.APP_NAME} - API Documentation</title>
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+            <style>
+              body {{
+                margin: 0;
+                padding: 0;
+              }}
+            </style>
+          </head>
+          <body>
+            <redoc spec-url="/openapi.json"></redoc>
+            <script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
+          </body>
+        </html>
+        """,
+        status_code=200,
+    )
 
 # Custom exception handlers
 @app.exception_handler(AppException)
