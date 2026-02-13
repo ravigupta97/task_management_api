@@ -1,4 +1,3 @@
-
 """
 Rate limiting configuration using SlowAPI.
 Protects endpoints from abuse and brute force attacks.
@@ -27,21 +26,23 @@ def get_identifier(request: Request) -> str:
     Returns:
         Identifier string for rate limiting
     """
-    # For authenticated requests, you could use user ID
-    # if hasattr(request.state, "user"):
-    #     return f"user:{request.state.user.id}"
+    # Get forwarded IP (for when behind proxy/load balancer)
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0]
     
-    # Default: use IP address
+    # Fallback to direct IP
     return get_remote_address(request)
 
 
-# Initialize limiter
+# Initialize limiter with swallow_errors=True for production
 limiter = Limiter(
     key_func=get_identifier,
-    default_limits=["100/minute"],  # Global default limit
-    storage_uri="memory://",  # In-memory storage (use Redis in production)
-    strategy="fixed-window",  # Rate limiting strategy
-    headers_enabled=True,  # Include rate limit info in response headers
+    default_limits=["100/minute"],
+    storage_uri="memory://",
+    strategy="fixed-window",
+    headers_enabled=True,
+    swallow_errors=True,  # Don't crash on rate limit errors
 )
 
 
@@ -64,9 +65,9 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
         status_code=429,
         content={
             "detail": "Too many requests. Please try again later.",
-            "retry_after": exc.detail
+            "retry_after": str(exc.detail) if exc.detail else "60"
         },
         headers={
-            "Retry-After": str(exc.detail)
+            "Retry-After": str(exc.detail) if exc.detail else "60"
         }
     )

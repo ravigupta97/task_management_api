@@ -34,6 +34,7 @@ router = APIRouter()
 @limiter.limit("5/minute")  # Prevent spam registrations
 async def register(
     request: Request,
+    response: Response,
     user_in: UserCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
@@ -112,6 +113,7 @@ async def login(
 @limiter.limit("10/minute")  # More lenient for token refresh
 async def refresh_token(
     request: Request,
+    response: Response,
     refresh_data: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db)
 ):
@@ -143,6 +145,7 @@ async def refresh_token(
 @limiter.limit("3/minute")  # Strict limit for password reset
 async def request_password_reset(
     request: Request,
+    response: Response,
     reset_request: PasswordResetRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
@@ -176,6 +179,7 @@ async def request_password_reset(
 @limiter.limit("5/minute")
 async def reset_password(
     request: Request,
+    response: Response,
     reset_data: PasswordReset,
     db: AsyncSession = Depends(get_db)
 ):
@@ -204,6 +208,7 @@ async def reset_password(
 @limiter.limit("5/minute")
 async def verify_email(
     request: Request,
+    response: Response,
     verification_data: EmailVerificationRequest,
     db: AsyncSession = Depends(get_db)
 ):
@@ -231,6 +236,7 @@ async def verify_email(
 @limiter.limit("3/minute")  # Strict limit to prevent spam
 async def resend_verification(
     request: Request,
+    response: Response,
     resend_request: ResendVerificationRequest,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
@@ -273,6 +279,7 @@ async def resend_verification(
 @limiter.limit("30/minute")  # Standard rate limit for authenticated endpoints
 async def get_current_user_info(
     request: Request,
+    response: Response,
     current_user: User = Depends(get_current_active_user)
 ):
     """
@@ -289,6 +296,7 @@ async def get_current_user_info(
 @limiter.limit("10/minute")
 async def logout(
     request: Request,
+    response: Response,
     current_user: User = Depends(get_current_active_user)
 ):
     """

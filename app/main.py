@@ -3,7 +3,7 @@ Main FastAPI application.
 Initializes app, middleware, routes, and exception handlers.
 """
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -131,47 +131,6 @@ All errors follow a consistent format:
     }
 )
 
-# Add rate limiter to app state
-app.state.limiter = limiter
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-# Request logging middleware
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """
-    Log all incoming requests and their processing time.
-    """
-    start_time = time.time()
-    
-    # Log request
-    logger.info(f"Request: {request.method} {request.url.path}")
-    
-    # Process request
-    response = await call_next(request)
-    
-    # Calculate processing time
-    process_time = time.time() - start_time
-    
-    # Add processing time header
-    response.headers["X-Process-Time"] = str(process_time)
-    
-    # Log response
-    logger.info(
-        f"Response: {request.method} {request.url.path} - "
-        f"Status: {response.status_code} - "
-        f"Time: {process_time:.4f}s"
-    )
-    
-    return response
 
 
 # Custom exception handlers
@@ -238,6 +197,79 @@ async def general_exception_handler(request: Request, exc: Exception):
         }
     )
 
+# Add rate limiter to app state
+app.state.limiter = limiter
+# Add exception handler for rate limit
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+
+# CORS middleware (must be added BEFORE other middleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Request logging and monitoring middleware
+@app.middleware("http")
+async def log_and_monitor_requests(request: Request, call_next):
+    """
+    Log all incoming requests, track performance, and add timing headers.
+    """
+    from app.core.monitoring import performance_monitor
+    
+    start_time = time.time()
+    
+    # Log request
+    logger.info(f"Request: {request.method} {request.url.path}")
+    
+    try:
+        # Process request
+        response = await call_next(request)
+        
+        # Calculate processing time
+        process_time = time.time() - start_time
+        
+        # Record metrics
+        performance_monitor.record_request(
+            endpoint=f"{request.method} {request.url.path}",
+            duration=process_time,
+            status_code=response.status_code
+        )
+        
+        # Add headers
+        response.headers["X-Process-Time"] = str(process_time)
+        
+        # Log response
+        logger.info(
+            f"Response: {request.method} {request.url.path} - "
+            f"Status: {response.status_code} - "
+            f"Time: {process_time:.4f}s"
+        )
+        
+        # Warn on slow requests (> 1 second)
+        if process_time > 1.0:
+            logger.warning(
+                f"Slow request detected: {request.method} {request.url.path} "
+                f"took {process_time:.4f}s"
+            )
+        
+        return response
+    
+    except Exception as e:
+        process_time = time.time() - start_time
+        logger.error(f"Error processing request: {str(e)}")
+        
+        # Record error
+        performance_monitor.record_request(
+            endpoint=f"{request.method} {request.url.path}",
+            duration=process_time,
+            status_code=500
+        )
+        
+        raise
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
@@ -246,7 +278,7 @@ app.include_router(api_router, prefix="/api/v1")
 # Health check endpoint
 @app.get("/health", tags=["Health"])
 @limiter.limit("10/minute")  # Custom rate limit for health checks
-async def health_check(request: Request):
+async def health_check(request: Request, response: Response,):
     """
     Health check endpoint with database connectivity test.
     Returns API status, version, and database status.
@@ -273,7 +305,7 @@ async def health_check(request: Request):
 # Metrics endpoint for monitoring
 @app.get("/metrics", tags=["Monitoring"])
 @limiter.limit("10/minute")
-async def get_metrics(request: Request):
+async def get_metrics(request: Request, response: Response,):
     """
     Get API performance metrics.
     
@@ -300,7 +332,7 @@ async def get_metrics(request: Request):
 # Reset metrics endpoint (admin only - in production, add authentication)
 @app.post("/metrics/reset", tags=["Monitoring"])
 @limiter.limit("1/hour")
-async def reset_metrics(request: Request):
+async def reset_metrics(request: Request, response: Response,):
     """
     Reset performance metrics.
     
@@ -328,48 +360,3 @@ async def root():
         "health": "/health"
     }
 
-# Request logging and monitoring middleware
-@app.middleware("http")
-async def log_and_monitor_requests(request: Request, call_next):
-    """
-    Log all incoming requests, track performance, and add timing headers.
-    """
-    from app.core.monitoring import performance_monitor
-    
-    start_time = time.time()
-    
-    # Log request
-    logger.info(f"Request: {request.method} {request.url.path}")
-    
-    # Process request
-    response = await call_next(request)
-    
-    # Calculate processing time
-    process_time = time.time() - start_time
-    
-    # Record metrics
-    performance_monitor.record_request(
-        endpoint=f"{request.method} {request.url.path}",
-        duration=process_time,
-        status_code=response.status_code
-    )
-    
-    # Add headers
-    response.headers["X-Process-Time"] = str(process_time)
-    
-    # Log response with color coding
-    status_color = "green" if response.status_code < 400 else "red"
-    logger.info(
-        f"Response: {request.method} {request.url.path} - "
-        f"Status: {response.status_code} - "
-        f"Time: {process_time:.4f}s"
-    )
-    
-    # Warn on slow requests (> 1 second)
-    if process_time > 1.0:
-        logger.warning(
-            f"Slow request detected: {request.method} {request.url.path} "
-            f"took {process_time:.4f}s"
-        )
-    
-    return response
